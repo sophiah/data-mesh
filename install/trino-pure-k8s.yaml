@@ -1,0 +1,88 @@
+# example from https://github.com/joshuarobinson/trino-on-k8s/blob/master/trino.yaml
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: data-mesh
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: trino
+  namespace: data-mesh
+spec:
+  ports:
+  - port: 8080
+  selector:
+    app: trino-coordinator
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trino-coordinator
+  namespace: data-mesh
+spec:
+  selector:
+    matchLabels:
+      app: trino-coordinator
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: trino-coordinator
+    spec:
+      containers:
+      - name: trino
+        image: trinodb/trino:435
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: "2G"
+            cpu: 2
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: trino-worker
+  namespace: data-mesh
+spec:
+  serviceName: trino-worker
+  replicas: 2
+  selector:
+    matchLabels:
+      app: trino-worker
+  template:
+    metadata:
+      labels:
+        app: trino-worker
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+      - name: trino
+        image: trinodb/trino:435
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: "2G"
+            cpu: 2
+
+# trino-cli
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: trino-cli
+  namespace: data-mesh
+spec:
+  containers:
+  - name: trino-cli
+    image: trinodb/trino:435
+    command: ["tail", "-f", "/dev/null"]

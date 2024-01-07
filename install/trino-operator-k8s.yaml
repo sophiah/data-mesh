@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: data-mesh
+
+---
+apiVersion: trino.stackable.tech/v1alpha1
+kind: TrinoCluster
+metadata:
+  name: simple-trino
+  namespace: data-mesh
+spec:
+  image:
+    productVersion: "428"
+  clusterConfig:
+    catalogLabelSelector:
+      matchLabels:
+        trino: simple-trino
+    listenerClass: external-unstable
+  coordinators:
+    roleGroups:
+      default:
+        replicas: 1
+    config:
+      resources:
+        cpu:
+          min: 300m
+          max: 500m
+        memory:
+          limit: 1Gi
+  workers:
+    roleGroups:
+      default:
+        replicas: 1
+        configOverrides:
+          config.properties:
+            query.max-memory-per-node: "1GB"
+    config:
+      resources:
+        cpu:
+          min: 300m
+          max: 500m
+        memory:
+          limit: 1Gi
